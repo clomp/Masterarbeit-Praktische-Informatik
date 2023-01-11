@@ -65,7 +65,7 @@ class localGPR():
         return(1/mean * sum([ws[k]*ys[k] for k in range(N)]))
     
     
-
+DATA_PATH="../../dataset/"
 #dataset="dataset4" ; input_size=6; limitation=None;
 #dataset="dataset5" ; input_size=6; limitation=None;
 dataset="dataset6" ; input_size=9; limitation=None;
