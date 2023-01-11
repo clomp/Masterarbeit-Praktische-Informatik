@@ -1,0 +1,24 @@
+Idea:
+
+1. (Initialization) choose N data points D={(x1,y1), ..., (xN,yN)}, say N=150 and train a full GP with it.
+2. create Huber's recursiveGP by using the previously optimized hyperparameters of the fullGP and 
+3. choose basis vectors either from the points in D or by using Julian's method from the intervals of input coordinates of points in D.
+4. For every new data point (x,y) 
+	(i) train the recursiveGP using Huber's algorithm 
+	(ii) substitute a point in D with (x,y) in case the "diameter" of D would get larger (in order to have greater distribution of D in the ambiente space)
+	(iii) if a certain criterion is fulfilled go back to 1. and train again a full GP with the points in D and update the hyperparameters of Huber's recursive GP.
+
+A criterion for 4(iii) could be:
+	(a) the "diameter" of D exceeds a certain threshold, like twice or three times the previous diameter of D
+	(b) the prediction error of the recursiveGP gets too bad, e.g. the mean of the prediction error of the last n data points is above a certain threshold)
+	(c) a combination of (a) and (b)
+
+The initialization phase 1 could be supported by a "representative" round trip of the robot arm.
+
+The diameter of a set of points in R^d is defined as the maximum of the pairwise distances of points in D. 
+As distances one has several choices, which includes the euclidean norm, but could be also the norm induced by the lengthscales of the kernel.
+
+On the other hand, an outlier might increase the diameter artificially. Hence it would be maybe better to maximize the minimum distance of D, i.e. the minimum of distances between two points.
+If x* is a new point and d*=d(a,b) is the minimum distance of D, then 
+	if for all x in D d(x*,x)>d* then [substitute a with x* in case d(x*,b)>d(x*,a) otherwise substitute b with x*] else do not include x*
+
