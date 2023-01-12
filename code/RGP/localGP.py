@@ -10,32 +10,32 @@ doi
 """
 import gpflow
 import numpy as np
-import json
 import tqdm as tqdm
 from tensorflow.python.ops.numpy_ops import np_config
 np_config.enable_numpy_behavior()
 
-from dataset import dataset
-
-
 class localGPR():
-    def __init__(self, x, y, sigma_n, sigma_s, lengthscales, wgen=0.1):    
-        self.sigma = sigma_n
-        if(type(lengthscales) is list):
-            if(len(lengthscales) == x.shape[0]): 
-                self.W = np.diag(lengthscales)
-            else:
-                print("Error: size of lengthscales does not match data vectors.")
-        else:
-            self.W = lengthscales * np.eye(x.shape[0])
-            
-        self.wgen = wgen
-        self.kernel = gpflow.kernels.SquaredExponential(variance=sigma_s,lengthscales=lengthscales)
-        self.K = self.kernel.K
+    def __init__(self, variance, lengthscales, sigma):    
+        self.sigma = sigma        
+        self.kernel = gpflow.kernels.SquaredExponential(variance=variance,lengthscales=lengthscales)
+        self.K = self.kernel.K        
+        self.lengthscales=lengthscales
+                
+    def initialise(self, dataobj, options=None):
+        x = dataobj.XTrain[0]        
+        y = dataobj.YTrain[0,options["i"]]
         self.center_of_models = [x]
         self.local_models_X = [[x]]
         self.local_models_y = [[y]]
         self.alpha = [self.AdjustLocalPredictionVector(0)]
+        self.wgen = options["wgen"]                
+        if(type(self.lengthscales) is list):
+            if(len(self.lengthscales) == x.shape[0]): 
+                self.W = np.diag(self.lengthscales)
+            else:
+                print("Error: size of lengthscales does not match data vectors.")
+        else:
+            self.W = self.lengthscales * np.eye(x.shape[0])            
         
     def AdjustLocalPredictionVector(self, k):
         X=self.local_models_X[k]
@@ -69,8 +69,11 @@ class localGPR():
             self.alpha.append(self.AdjustLocalPredictionVector(len(self.center_of_models)-1))
             
     def predict(self, X):
-        P=np.array([self.predict_mean(X[i]) for i in range(len(X))]).reshape((-1,1))
-        return(P,P)
+        P=[]
+        for i in tqdm.trange(len(X)):
+            P.append(self.predict_mean(X[i]))             
+        P=np.array(P).reshape((-1,1))
+        return(P,None) 
         
     def predict_mean(self, x):
         N=len(self.center_of_models)
@@ -80,51 +83,36 @@ class localGPR():
         return(1/mean * sum([ws[k]*ys[k] for k in range(N)]))
     
  
-dataobj = dataset(6)
-dataobj.load_dataframe(reuse=True)
+# dataobj = dataset(6)
+# dataobj.load_dataframe(reuse=True)
+# num_coordinates=3
+# SCALING = 1000
 
-XTest  = dataobj.XTest
-YTest  = dataobj.YTest
-XTrain  = dataobj.XTrain
-YTrain  = dataobj.YTrain
-ds_offset = dataobj.ds_offset
-ds_length = dataobj.ds_length
-Lengthscales = dataobj.Lengthscales
-Variances = dataobj.Variances
-           
-num_models=3
-SCALING = 1000
-print("Create Models")
-models = [ localGPR(dataobj.XTrain[0],dataobj.YTrain[0,i:i+1], 0.1,1.0,1.0,0.9) for i in range(num_models)]
+# #rint("Create Models")
+# #odels = [ localGPR(dataobj.XTrain[0],dataobj.YTrain[0,i:i+1], 0.1,1.0,1.0,0.9) for i in range(num_coordinates)]
+
+# rgpmodel  = localGPR 
+# options = {"wgen":0.5}
+
+# classname = rgpmodel.__name__
+# print("Create ", num_coordinates, " models of class ", classname)
+# models = [rgpmodel(variance = dataobj.Variances[i], lengthscales = dataobj.Lengthscales[i], sigma=1E-05) for i in range(num_coordinates)]
 
 
-classname=localGPR.__name__
-print("Training of ", num_models, " models of class ", classname)
-for m in models:
-   j=models.index(m)
-   print("Training of "+str(j)+"th model")    
-   m.train_batch(dataobj.XTrain, dataobj.YTrain[:,j:j+1])
+# print("Initialitze ", num_coordinates, " models of class ", classname)
+# for m in models:
+#     options["i"]=models.index(m)
+#     m.initialise(dataobj, options)
 
-# print("Training")
+# print("Training of ", num_coordinates, " models of class ", classname)
 # for m in models:
 #     j=models.index(m)
-#     print("Training of "+str(j)+"th model")
-#     for i in tqdm.trange(1,len(XTrain)):
-#         m.update(XTrain[i],YTrain[i,j:j+1])
-                 
-# predictions = []
-# for m in models:
-#     j = models.index(m)
-#     print("Prediction of "+str(j)+"th model")
-#     predictions.append([np.abs(dataobj.YTest[i,j:j+1]-m.predict(dataobj.XTest[i])) for i in range(len(dataobj.YTest))])
-
-# # print("Max: " + str(np.max(diff)))
-# # print("Mean: " + str(np.mean(diff)))
-    
+#     m.train_batch(dataobj.XTrain, dataobj.YTrain[:,j:j+1],None)
 
 # print("Calculate Predictions and analyze error")   
-# predictions = [m.predict(dataobj.XTest[i]).numpy() for i in range(len(XTest))]
+# predictions = [m.predict(dataobj.XTest)[0] for m in models]
 # difference, totalMSE, componentwiseErrors = dataobj.analyze_error(predictions,SCALING)
     
 # print("Print error analysis")   
 # dataobj.print_analysis(difference.T, totalMSE, componentwiseErrors)  
+

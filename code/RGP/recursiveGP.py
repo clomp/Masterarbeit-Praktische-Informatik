@@ -32,8 +32,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.cluster import KMeans
 
-class recursiveGP():
+class recursiveGP():    
     def __init__(self, variance=1.0 ,lengthscales=0.5, sigma = 0.01):
+        """
+        initilizing an object of the recursiveGP class according to Huber.
+        Parameters
+        ----------
+        variance : float, optional            
+        lengthscales : float or list of floats, optional            
+        sigma : float, optional
+            
+        Parameters will be passed to the kernel        
+
+        """        
         self.kernel         = gpflow.kernels.SquaredExponential(variance=variance,lengthscales=lengthscales)+gpflow.kernels.White(variance=sigma)
         self.covfunc        = self.kernel.K
         self.mean           = gpflow.mean_functions.Zero()

@@ -54,7 +54,7 @@ class dataset():
     def _denormalize(self, A,offset,length):
         return((A*length)+offset)
     
-    def load_dataframe(self, reuse=False, test_size=0.2, save=True, default_lengthscale=0.5, default_variance=1.0):
+    def load_dataframe(self, reuse=False, test_size=0.2, save=False, default_lengthscale=0.5, default_variance=1.0):
         if(os.path.isfile(self.meta_filename) and reuse):  
             print("Pre-calcuated Test/Train pairs will be loaded.")
             TestData  = np.loadtxt(self.test_filename,delimiter=",")
@@ -79,8 +79,8 @@ class dataset():
             
             self.XTrain, self.XTest , self.YTrain, self.YTest = train_test_split(X_values,Y_values, test_size=test_size, random_state=42)      
             
-            self.Lengthscales=[default_lengthscale]*(dimension-self.input_dim)
-            self.Variances=[default_variance]*(dimension-self.input_dim)
+            self.Lengthscales=[[default_lengthscale]*self.input_dim]*(dimension-self.output_offset)
+            self.Variances=[default_variance]*(dimension-self.output_offset)
             if(save):
                 np.savetxt(self.test_filename, np.hstack((self.XTest, self.YTest)), delimiter=",")
                 np.savetxt(self.train_filename, np.hstack((self.XTrain, self.YTrain)), delimiter=",")
