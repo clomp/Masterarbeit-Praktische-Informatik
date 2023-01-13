@@ -10,7 +10,6 @@ from recursiveGP import recursiveGP
 from dataset import dataset
 
 
-
 def testbase(rgpmodel, dataset_nr, options, num_coordinates=3, reuse=True, iterations=100, batch=10, SCALING=1000):
  
     
