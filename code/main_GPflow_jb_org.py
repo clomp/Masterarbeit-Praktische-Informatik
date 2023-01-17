@@ -4,13 +4,13 @@ Created on Tue Nov  8 16:26:34 2022
 
 @author: Blumberg
 """
-import gpflow, tqdm
+import gpflow
+import tqdm
 from sklearn.model_selection import train_test_split
 import numpy as np
 from matplotlib import pyplot as plt
 import tensorflow as tf
 from filterpy.kalman.sigma_points import MerweScaledSigmaPoints, JulierSigmaPoints, SimplexSigmaPoints
-
 
 
 class GPmodel():
@@ -32,6 +32,7 @@ class GPmodel():
                 
         self.Model = []
         self.failures=0
+        self.numberofcalls=0
         
             
     def intializeGPR(self, X=None, Y=None):
@@ -54,7 +55,7 @@ class GPmodel():
         self.mx = Model.mean_function(X).numpy()
         return self
     
-    def intialize_recursiveGPR_HPO(self, Xbase, params=np.array([1.0, 0.5, 0.01])):
+    def intialize_recursiveGPR_HPO(self, Xbase, params=np.array([0.5, 1.0, 0.01])):
         self.params = params
         self.X_base = Xbase
         
@@ -71,16 +72,21 @@ class GPmodel():
         self.k_ge = np.zeros((len(X_base),len(params))) #zero initializing according to Huber
         
         self.Points = MerweScaledSigmaPoints(len(params), alpha=1e-3, beta=2.0, kappa=0.0)
-        #self.Points = JulierSigmaPoints(len(params),kappa=0)  #not working! produces negative lenghtscales! why?
+        # self.Points = JulierSigmaPoints(len(params),kappa=-2.0)  #not working! produces negative lenghtscales! why?
         # self.covHPO = 0.2*np.eye(len(params)) #To Do!!!! initialize like stated by Huber!!!!
         
         var_lengthscale = params[0] #0.2
         var_variance = params[1] #0.3
         var_noise = params[2] #0.01
         
-        self.covHPO = np.array([[var_lengthscale, 0.0, var_noise*0.5], 
-                                [0.0, var_variance, var_noise*0.5],
-                                [var_noise*0.5, var_noise*0.5, var_noise]])
+#        self.covHPO = np.array([[var_lengthscale, 0.0, var_noise*0.5], 
+#                                [0.0, var_variance, var_noise*0.5],
+#                                [var_noise*0.5, var_noise*0.5, var_noise]])
+
+        self.covHPO = np.array([[var_lengthscale, 0.0, 0.0], 
+                                [0.0, var_variance, 0.0],
+                                [0.0, 0.0, var_noise]])
+
         return self
        
     def get_Mean_and_Variance(self, Xt, covIn=None, meanIn=None):
@@ -229,16 +235,16 @@ class GPmodel():
         
         #mu_ot[0] = noise
         #mu_ot[1:] = new observations
-        #mu_ut[0:self.Nbase] = base vectors			
+        #mu_ut[0:self.Nbase] = base vectors
         #mu_ut[Nbase:] = hyperparameters except noise
         return mu_ut, mu_ot, k_ut, k_ot, k_uo
     
     def recursiveGPR_HPO(self, Xt, Yt):        
         #Draw Sigma Points
-        regulation = 0
         sigmaPoints = self.Points.sigma_points(x=self.params, P=self.covHPO)
         weights = self.Points.Wm
-        
+        regterm=0.5
+        self.numberofcalls+=1
         # print(sigmaPoints)
         # print(weights)
         mu_pt = 0
@@ -252,7 +258,7 @@ class GPmodel():
             At = self.At(Jt)
             
             #St = self.k_ge @ np.linalg.pinv(self.covHPO)
-            St = self.k_ge @ np.linalg.pinv(self.covHPO + regulation*np.eye(self.covHPO.shape[0]))
+            St = self.k_ge @ np.linalg.pinv(self.covHPO+regterm*np.eye(self.covHPO.shape[0]))
             
             mu_w = self.mu_w(Jt,Xt)
             k_w = self.k_w(Jt, Xt)
@@ -262,22 +268,22 @@ class GPmodel():
             
             k_p_row1 = np.hstack((self.k_prior - St @ self.k_ge.T , np.zeros((self.Nbase,self.Nparams))))
             k_p_row2 = np.zeros((self.Nparams,self.Nbase+self.Nparams))
-            k_pi = At @ np.vstack((k_p_row1, k_p_row2)) @ At.T + k_w            
-            mu_pt += weights[i] * mu_pi            
-            k_pt  += weights[i] * ((mu_pi-mu_pt) @ (mu_pi-mu_pt).T + k_pi)            
-        #update 
+            k_pi = At @ np.vstack((k_p_row1, k_p_row2)) @ At.T + k_w
+            
+            mu_pt += weights[i] * mu_pi
+            k_pt  += weights[i] * ((mu_pi-mu_pt) @ (mu_pi-mu_pt).T + k_pi)
+            
         mu_ut, mu_ot, k_ut, k_ot, k_uo = self.decompose(mu_pt, k_pt)
-               
+                
         mu_yt = mu_ot[1:]
-        
         k_yt  = k_ot[1:,1:] + k_ot[0,0] + mu_ot[0]**2
-        k_oyt = k_ot[:,1:]      #To Do!! Check, if this is correct! Reduces to a vector!
+        k_oyt = k_ot[0,1:]      #To Do!! Check, if this is correct! Reduces to a vector!
         
         #Gt = k_oyt @ np.linalg.pinv(k_yt)
-        Gt = k_oyt @ np.linalg.pinv(k_yt + regulation*np.eye(k_yt.shape[0]))        
+        Gt = k_oyt @ np.linalg.pinv(k_yt+regterm*np.eye(k_yt.shape[0]))
         
         #Lt = k_uo @ np.linalg.pinv(k_ot)
-        Lt = k_uo @ np.linalg.pinv(k_ot + regulation*np.eye(k_ot.shape[0]) )
+        Lt = k_uo @ np.linalg.pinv(k_ot+regterm*np.eye(k_ot.shape[0]))
         
         hT = np.hstack((np.array([[1.0]]), np.zeros((1,len(mu_ot)-1))))
         
@@ -287,39 +293,24 @@ class GPmodel():
         mu_ut += Lt @ (mu_et - mu_ot)
         k_ut  += Lt @ (k_et - k_ot) @ Lt.T
         
-        #mu_zt = np.vstack((hT @ mu_et, mu_ut))
-        mu_zt = np.vstack((mu_ut, hT@mu_et))
-        
-        #k_zt_row1  = np.hstack((hT @ k_et @ hT.T, hT @ k_et @ Lt.T))
-        #k_zt_row2  = np.hstack((Lt @ k_et @ hT.T, k_ut))
-        #k_zt = np.vstack((k_zt_row1, k_zt_row2))
-        k_zt_row1  = np.hstack((k_ut, Lt @ k_et @ hT.T))        
-        k_zt_row2  = np.hstack(( hT @ k_et @ Lt.T, hT @ k_et @ hT.T))
+        mu_zt = np.vstack((hT @ mu_et, mu_ut))
+        k_zt_row1  = np.hstack((hT @ k_et @ hT.T, hT @ k_et @ Lt.T))
+        k_zt_row2  = np.hstack((Lt @ k_et @ hT.T, k_ut))
         k_zt = np.vstack((k_zt_row1, k_zt_row2))
         
-        #self.params = np.array([mu_zt[-2], mu_zt[-1], mu_zt[0]]).reshape(3)
-        #self.params = mu_zt[-3:].reshape((-1,))
-        params = mu_zt[-3:].reshape((-1,))
-        #self.mu_prior = mu_zt[1:self.Nbase+1]
-        self.mu_prior = mu_zt[:self.Nbase]
-        
-        #self.k_prior  = k_zt[1:self.Nbase+1, 1:self.Nbase+1]
-        self.k_prior  = k_zt[:self.Nbase, :self.Nbase]
-                
-        #temp1_covHPO = k_zt[-(self.Nparams-1):,-(self.Nparams-1):]
-        #temp2_covHPO = np.hstack((k_zt[0,0], k_zt[0,-(self.Nparams-1):]))
-        #temp3_covHPO = np.hstack((temp1_covHPO, k_zt[-(self.Nparams-1):,0:1]))
-        #covHPO  = np.vstack((temp3_covHPO, temp2_covHPO)) #does not stay positive definite!! But must be updated to change sigma points
-        
-        covHPO = k_zt[-3:,-3:]
-
+        self.params = np.array([mu_zt[-2], mu_zt[-1], mu_zt[0]]).reshape(3)
+        self.mu_prior = mu_zt[1:self.Nbase+1]
+        self.k_prior  = k_zt[1:self.Nbase+1, 1:self.Nbase+1]
+        temp1_covHPO = k_zt[-(self.Nparams-1):,-(self.Nparams-1):]
+        temp2_covHPO = np.hstack((k_zt[0,0], k_zt[0,-(self.Nparams-1):]))
+        temp3_covHPO = np.hstack((temp1_covHPO, k_zt[-(self.Nparams-1):,0:1]))
+        covHPO  = np.vstack((temp3_covHPO, temp2_covHPO)) #does not stay positive definite!! But must be updated to change sigma points
+        # print(covHPO)
         try:
-            self.Points.sigma_points(x=params, P=covHPO)
+            self.Points.sigma_points(x=self.params, P=covHPO)
             self.covHPO=covHPO
-            self.params=params 
         except:
-            self.failures+=1
-        
+            self.failures+=1        
         #Update of covHPO is missing
         #Update of self.k_ge is missing
         #Update of mu_ut and k_ut is missing (??? needed???)
@@ -366,9 +357,9 @@ class GPmodel():
         plt.show()
     
     def test_recursiveGPR_HPO(self,Xt,Yt,batchSize=1):      
-        for i in tqdm.tqdm(range(0, Xt.shape[0]+1, batchSize)):            
+        for i in tqdm.tqdm(range(0, Xt.shape[0]+1, batchSize)):
             self.recursiveGPR_HPO(Xt[i:i+batchSize,:], Yt[i:i+batchSize,:])
-                   
+        print(self.failures,        self.numberofcalls)                   
         # mean_g, var_g = self.recursivePredict(Xt)    
     
     
@@ -412,7 +403,7 @@ class GPmodel():
 # f = 30
 # Y = np.sin(X*f)
 
-N = 1000
+N = 2000
 X = np.linspace(-10,10,N)
 X = np.array([X]).T
 X_base = np.linspace(-10,10,25)
@@ -455,12 +446,12 @@ if __name__ == '__main__':
     # myGPmodel.test_simpleGPR(X=X_base, Y=Y_base)
     # myGPmodel.test_recursiveGPR(X, Y, batchSize=10)
     
-
+    
     myGPmodel.intialize_recursiveGPR_HPO(Xbase=X_base)
     # myGPmodel.recursiveGPR_HPO(Xt, Yt)
     myGPmodel.test_recursiveGPR_HPO(X, Y, batchSize=10)
     
-    print("Failures:",myGPmodel.failures)
+    
 
 
 
