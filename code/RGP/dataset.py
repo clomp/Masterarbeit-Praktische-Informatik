@@ -24,7 +24,7 @@ DATASET_META    = [(0.0,0), (6,6,2000),(9,12,2000), (9,12,2000), (6,6,None), (6,
 class dataset():
     def __init__(self, data_id, 
                      gprname="",
-                     DATASET_PATH    = "../../datasets/",
+                     DATASET_PATH    = "../../../datasets/",
                      DATASET         = "dataset",
                      OUTPUT_PATH     = "output/",
                      META_PATH       = "meta/"
@@ -87,16 +87,19 @@ class dataset():
                 out_file = open(self.meta_filename, "w")
                 json.dump([self.ds_offset,self.ds_length,self.Lengthscales,self.Variances], out_file)
                 out_file.close()
+        # denormalizing the y-values of the test data for calculating the error
+        self.YTest_denormalized = self._denormalize(self.YTest, self.ds_offset[self.output_offset:], self.ds_length[self.output_offset:]) 
     
     def get_input_bounds(self):
         lb=[np.min(self.XTrain[:,i]) for i in range(self.input_dim)]
         ub=[np.max(self.XTrain[:,i]) for i in range(self.input_dim)]
-        return(lb,ub)
+        return(lb,ub)    
     
     def get_difference(self, Ypred, coordinate):
         length      = self.ds_length[coordinate+self.output_offset]
         offset      = self.ds_offset[coordinate+self.output_offset]    
-        YTst        = self._denormalize(self.YTest[:,coordinate:coordinate+1], offset,  length)
+#        YTst        = self._denormalize(self.YTest[:,coordinate:coordinate+1], offset,  length)
+        YTst       = self.YTest_denormalized[:,coordinate] 
         YTst_pred   = self._denormalize(Ypred, offset, length)
         return(np.abs(YTst-YTst_pred))  
 
@@ -136,7 +139,40 @@ class dataset():
             plt.savefig(self.output_filename, format="pdf", bbox_inches="tight")
         plt.show()  
 
+    def CreateBasisVectors(self, num_base_vectors=20, strategy="JB"):                
+        
+        if(strategy=="kmeans"):
+            return(self._strategy_kmeans(num_base_vectors))
+        
+        elif(strategy=="CL"):     
+            return(self._strategy_cl(num_base_vectors))
+            
+        elif(strategy=="JB"):
+            return(self._strategy_jb(num_base_vectors))
+        
+    def _strategy_kmeans(self, num_base_vectors):
+        kmeans = KMeans(n_clusters=num_base_vectors, random_state=42)    
+        kmeans.fit(self.XTrain)
+        I=[[j for j in range(self.XTrain.shape[0]) if kmeans.labels_[j]==i] for i in range(num_base_vectors)]
+        Centers=[[np.mean(self.XTrain[I[i]][:,j]) for j in range(self.input_dim)] for i in range(num_base_vectors)]
+        return(np.array(Centers))    
 
+    def _strategy_cl(self,  num_base_vectors):
+        lb,ub = self.get_input_bounds()    
+        num_sep = int(math.pow(num_base_vectors,1/self.input_dim)) 
+        list_base_coordinates=[ list(np.linspace(lb[i], ub[i], num_sep))  for i in range(self.input_dim)]
+        list_base_vectors=[]
+        for b in itertools.product(*list_base_coordinates):
+            list_base_vectors.append(b)    
+        return(np.array(list_base_vectors))
+    
+    def _strategy_jb(self, num_base_vectors):
+        lb,ub = self.get_input_bounds()
+        list_base_coordinates=[ np.linspace(lb[i], ub[i], num_base_vectors)  for i in range(self.input_dim)]
+        for ls in list_base_coordinates:
+            np.random.shuffle(ls)
+        return(np.vstack(tuple(list_base_coordinates)).T)
+    
         
     
         

@@ -3,7 +3,7 @@ Dual GP-EnKF model
 """
 
 import numpy as np
-from gpenkf.gp_util.squared_exponential import SquaredExponential
+from GPEnKFmaster.gpenkf.gp_util.squared_exponential import SquaredExponential
 
 
 class DualGPEnKF:
@@ -259,6 +259,35 @@ class DualGPEnKF:
         mean = self.__predict_at_obs(x_sample, eta_mean, g_mean)
 
         return np.mean(np.sqrt((mean-f_true_sample)**2)/np.sqrt(f_true_sample**2))
+
+#------------
+    def compute_mse(self, x_sample, f_true_sample):
+        """
+        :param x_sample: location of the points to predict
+        :param f_true_sample: true value at sample points
+        :return: NMSE between predicted and true values at sample points
+        """
+        eta_mean = np.mean(self.params_ensemble, axis=0)
+        g_mean = np.mean(self.g_ensemble, axis=0)
+
+        mean = self.__predict_at_obs(x_sample, eta_mean, g_mean)
+
+        return np.mean(np.sqrt((mean-f_true_sample)**2))
+
+
+    def compute_prediction(self, x_sample):   
+        """
+        :param x_sample: location of the points to predict
+        :param f_true_sample: true value at sample points
+        :return: NMSE between predicted and true values at sample points
+        """
+        eta_mean = np.mean(self.params_ensemble, axis=0)
+        g_mean = np.mean(self.g_ensemble, axis=0)
+
+        mean = self.__predict_at_obs(x_sample, eta_mean, g_mean)
+
+        return(mean)
+#-----
 
     def compute_log_likelihood(self, x_sample, f_true_sample):
         """

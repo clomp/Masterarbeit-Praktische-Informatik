@@ -4,7 +4,7 @@ import time
 import numpy as np
 from tqdm import tqdm
 
-from gpenkf.core import DualGPEnKF, LiuWestDualGPEnKF, AugmentedGPEnKF, NormalGP
+from GPEnKFmaster.gpenkf.core import DualGPEnKF, LiuWestDualGPEnKF, AugmentedGPEnKF, NormalGP
 
 import pickle as pkl
 
@@ -16,6 +16,8 @@ class Results(object):
         self.g_mean_history = np.zeros((T, grid_size))
         self.likelihood_history = np.zeros((T,))
         self.nmse_history = np.zeros((T,))
+        self.mse_history = np.zeros((T,))
+        self.prediction_history = np.zeros((T,))#,dtype=object)
         self.time = np.zeros((T,))
         self.eta_last_ensemble = np.zeros((ensemble_size, params_dimensionality))
 
@@ -85,14 +87,25 @@ class ExperimentRunner(object):
                 start_time = time.time()
                 self.runners[runner_key].run_iteration(x_new, f_new_noisy)
                 self.results[runner_key].time[t] = time.time() - start_time
+                
                 self.results[runner_key].eta_mean_history[t], self.results[runner_key].sigma_mean_history[t] = \
                     self.runners[runner_key].get_log_mean_params()
+                    
                 self.results[runner_key].g_mean_history[t] = self.runners[runner_key].get_g_mean().T
 
                 self.results[runner_key].likelihood_history[t] = self.runners[runner_key].compute_log_likelihood(
                     self.data_provider.x_validation, self.data_provider.f_validation)
+                
                 self.results[runner_key].nmse_history[t] = self.runners[runner_key].compute_nmse(
                     self.data_provider.x_validation, self.data_provider.f_validation)
+                
+                self.results[runner_key].mse_history[t] = self.runners[runner_key].compute_mse(
+                    self.data_provider.x_validation, self.data_provider.f_validation)
+                                
+                p=self.runners[runner_key].compute_prediction(self.data_provider.x_validation)
+                self.results[runner_key].prediction_history[t] = self.data_provider.get_error_mean(p)
+                
+                
 
         for runner_key in self.runners.keys():
             self.results[runner_key].eta_last_ensemble = self.runners[runner_key].get_eta_ensemble()

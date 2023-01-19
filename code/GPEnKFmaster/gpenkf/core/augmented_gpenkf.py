@@ -3,7 +3,7 @@ Augmented GP-EnKF model
 """
 
 import numpy as np
-from gpenkf.gp_util.squared_exponential import SquaredExponential
+from GPEnKFmaster.gpenkf.gp_util.squared_exponential import SquaredExponential
 
 
 class AugmentedGPEnKF:

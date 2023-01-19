@@ -3,7 +3,7 @@ Liu-West Dual GP-EnKF model
 """
 
 import numpy as np
-from gpenkf.core import DualGPEnKF
+from GPEnKFmaster.gpenkf.core import DualGPEnKF
 
 
 class LiuWestDualGPEnKF(DualGPEnKF):
@@ -15,7 +15,7 @@ class LiuWestDualGPEnKF(DualGPEnKF):
     :param learn_gp_parameters: indicator if the GP hyperparameters should be learnt
     :param learn_sigma: indicator if the noise variance should be learnt
     """
-    def __init__(self, parameters, learn_gp_parameters=True, learn_sigma=False, liu_west_delta=0.99):
+    def __init__(self, parameters, learn_gp_parameters=True, learn_sigma=False, liu_west_delta=0.99): #0.99
 
         super().__init__(parameters, learn_gp_parameters, learn_sigma)
 
