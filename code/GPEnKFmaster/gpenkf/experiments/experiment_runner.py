@@ -103,7 +103,7 @@ class ExperimentRunner(object):
                     self.data_provider.x_validation, self.data_provider.f_validation)
                                 
                 p=self.runners[runner_key].compute_prediction(self.data_provider.x_validation)
-                self.results[runner_key].prediction_history[t] = self.data_provider.get_error_mean(p)
+                self.results[runner_key].prediction_history[t] = 1000*self.data_provider.get_error_mean(p)
                 
                 
 

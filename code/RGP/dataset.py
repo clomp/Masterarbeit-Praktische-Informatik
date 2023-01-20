@@ -99,11 +99,13 @@ class dataset():
         length      = self.ds_length[coordinate+self.output_offset]
         offset      = self.ds_offset[coordinate+self.output_offset]    
 #        YTst        = self._denormalize(self.YTest[:,coordinate:coordinate+1], offset,  length)
-        YTst       = self.YTest_denormalized[:,coordinate] 
+        YTst       = self.YTest_denormalized[:,coordinate:coordinate+1] 
         YTst_pred   = self._denormalize(Ypred, offset, length)
         return(np.abs(YTst-YTst_pred))  
 
     def analyze_error(self, predictions, scaling):
+        if(type(predictions)!=list):
+            predictions = [predictions]
         num_models=len(predictions)
         N=predictions[0].shape[0]                
         difference  = [scaling * self.get_difference(predictions[i],i).reshape((N,)) for i in range(num_models)]
@@ -116,7 +118,7 @@ class dataset():
                     ).T
         return(difference, totalMSE, componentwiseErrors)    
     
-    def print_analysis(self,difference, totalMSE, componentwiseErrors, savePDF=True, nbins=100):        
+    def print_analysis(self,difference, totalMSE, componentwiseErrors, savePDF=False, nbins=100):        
         print("Total MSE:" + str(totalMSE))
         print("MSE, STD and MAX")
         for i in range(len(componentwiseErrors)):

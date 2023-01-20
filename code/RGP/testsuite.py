@@ -6,8 +6,8 @@ Created on Tue Jan 10 14:55:07 2023
 """
 __version__ = '0.1'
 
-from recursiveGP import recursiveGP
-from dataset import dataset
+from RGP.recursiveGP import recursiveGP
+from RGP.dataset import dataset
 
 
 

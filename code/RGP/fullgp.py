@@ -7,7 +7,7 @@ Created on Tue Nov 29 15:14:00 2022
 
 import json
 import gpflow
-from dataset import dataset
+from RGP.dataset import dataset
 
 def buildfullgp(dataset_nr, num_coordinates, save_hyper=False, SCALING=1000):
     classname = gpflow.__name__
