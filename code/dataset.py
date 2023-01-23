@@ -56,41 +56,44 @@ class dataset():
     def _denormalize(self, A,offset,length):
         return((A*length)+offset)
     
-    def load_dataframe(self, reuse=False, test_size=0.2, save=False, default_lengthscale=0.5, default_variance=1.0):
-        if(os.path.isfile(self.meta_filename) and reuse):  
-            print("Pre-calcuated Test/Train pairs will be loaded.")
+    def load_dataframe(self, load=False, save=False, test_size=0.2, default_lengthscale=0.5, default_variance=1.0):
+        if(load):  
+            print("Splitted Test/Train pairs will be loaded.")
             TestData  = np.loadtxt(self.test_filename,delimiter=",")
             self.XTest, self.YTest = np.split(TestData, [self.input_dim],axis=1)
                 
             TrainData = np.loadtxt(self.train_filename,delimiter=",")
             self.XTrain, self.YTrain  = np.split(TrainData, [self.input_dim], axis=1)
-            
+        
             f=open(self.meta_filename)
             self.ds_offset, self.ds_length, self.Lengthscales, self.Variances = json.load(f)
             f.close()
+
         else:
+            print("Test/Train pairs will be splitted.")
             dataframe = np.loadtxt(self.data_filename,delimiter=",")
             dimension = dataframe.shape[1]    
             self.ds_offset=[np.mean(dataframe[:,i:i+1]) for i in range(dimension)]
-            self.ds_length=[np.std(dataframe[:,i:i+1]) for i in range(dimension)]      
+            self.ds_length=[np.std(dataframe[:,i:i+1]) for i in range(dimension)]                  
             
-            dataframe = self._normalize(dataframe, self.ds_offset, self.ds_length)            
-            #X_values, Y_values = np.split(dataframe, [self.input_dim], axis=1)
+            dataframe = self._normalize(dataframe, self.ds_offset, self.ds_length)                        
+            
             X_values = dataframe[ : , : self.input_dim]
-            Y_values = dataframe[ : , self.output_offset: ]
-            
+            Y_values = dataframe[ : , self.output_offset: ]            
             self.XTrain, self.XTest , self.YTrain, self.YTest = train_test_split(X_values,Y_values, test_size=test_size, random_state=42)      
-            
+                                        
             self.Lengthscales=[[default_lengthscale]*self.input_dim]*(dimension-self.output_offset)
             self.Variances=[default_variance]*(dimension-self.output_offset)
+        
             if(save):
                 np.savetxt(self.test_filename, np.hstack((self.XTest, self.YTest)), delimiter=",")
                 np.savetxt(self.train_filename, np.hstack((self.XTrain, self.YTrain)), delimiter=",")
                 out_file = open(self.meta_filename, "w")
                 json.dump([self.ds_offset,self.ds_length,self.Lengthscales,self.Variances], out_file)
                 out_file.close()
+                
         # denormalizing the y-values of the test data for calculating the error
-        self.YTest_denormalized = self._denormalize(self.YTest, self.ds_offset[self.output_offset:], self.ds_length[self.output_offset:]) 
+        self.YTest_denormalized = self._denormalize(self.YTest, self.ds_offset[self.output_offset:], self.ds_length[self.output_offset:])         
     
     def get_input_bounds(self):
         lb=[np.min(self.XTrain[:,i]) for i in range(self.input_dim)]

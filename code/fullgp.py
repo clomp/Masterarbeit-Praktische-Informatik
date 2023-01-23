@@ -12,7 +12,7 @@ from dataset import dataset
 def fullgp(dataset_nr, num_coordinates, save_hyper=False, savePDF=False, SCALING=1000):
     classname = gpflow.__name__
     dataobj = dataset(dataset_nr,classname)
-    dataobj.load_dataframe()
+    dataobj.load_dataframe(load=False, save=save_hyper)
     N=dataobj.XTrain.shape[0]
     input_size=dataobj.input_dim
     limitation = dataobj.limitations
