@@ -5,7 +5,6 @@ Created on Tue Dec 13 10:48:47 2022
 
 Based on "Local Gaussian Process Regression for Real Time Online Model Learning and Control"
 https://dl.acm.org/doi/10.5555/2981780.2981929
-https://dl.acm.org/doi/10.5555/2981780.2981929
 
 doi
 """
@@ -49,6 +48,7 @@ class localGPR():
         return(np.exp(-0.5*d @ self.W @ (d.T)))
 
     def train_batch(self, xt, yt, batch=None):            # batch wird ignoriert
+        yt=np.squeeze(yt)
         for i in tqdm.tqdm(range(xt.shape[0])):  
             self.update(xt[i], yt[i])
     
