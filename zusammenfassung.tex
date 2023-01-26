@@ -1,0 +1,75 @@
+\documentclass[ngerman]{scrreprt}
+\usepackage{a4wide,amssymb}
+\usepackage[utf8]{inputenc}
+\usepackage[german]{babel}
+\newcommand{\recursiveGP}{\emph{recursiveGP}}
+\newcommand{\localGPR}{\emph{localGPR}}
+\newcommand{\dualGPEnKF}{\emph{dualGPEnKF}}
+\newcommand{\gpflow}{\emph{gpflow}}
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\cN}{\mathcal{N}}
+\newcommand{\cov}{\mathrm{cov}}
+\newcommand{\var}{\mathrm{var}}
+
+
+\begin{document}
+\section*{Kurze Zusammenfassung meines Aufenthaltes}
+
+Grundlegende Idee der Gaussprozessesregression:  Funktionswerte einer  Funktion $g:\RR^d \rightarrow \RR$  abzuschätzen unter gegebenen Datenpunkten $D=\{ (x_1,y_1), \ldots, (x_n,y_n)\}$ die 
+\begin{equation}
+y_i = g(x_i) + \epsilon, \qquad \forall i=1,\ldots, n.
+\end{equation}
+erfüllen, mit $\epsilon \sim \cN(0,\sigma^2)$.  Dabei ist der Gaussprozess bestimmt durch die Mittelwertfunktion $m(x) = E\{g(x)\}$ und die Kovarianzfunktion $k(x,x') = \cov(g(x),g(x'))$ für $x,x'\in \RR^d$. 
+Die Eingabewerte $X_D=\{x_1,\ldots, x_n\}$ sind dabei vorgegeben. Die Matrix 
+\begin{equation}K := \left[ \begin{array}{ccc} k(x_1,x_1) & \cdots & k(x_1,x_n) \\ \vdots & & \vdots \\ k(x_n,x_1) & \cdots & k(x_n,x_n) \end{array} \right]\end{equation}
+und der Vektor $k_x := ( k(x_1, x), \ldots, k(x_n,x) )^T$ zu gegebenem $x\in \RR^d$ ist dabei wesentlich um den Funktionswert $g(x)$ durch folgende Regeln abschätzen zu können:
+\begin{eqnarray}
+E\{ g(x)\} &=& m(x) + k_x K^{-1} \left(y-m(X_D)\right)\label{pred1}\\
+\var(x) &=& k(x,x)  + k_x K^{-1} k_x^T\label{pred2}
+\end{eqnarray}
+
+{\bf Problem:} Wenn $n$ zu gross, dann ist die Berechnung der Inversen $K^{-1}$ zu kostenintensiv. 
+
+{\bf Problem:} Die Kernelfunktion ist ein zu bestimmender Hyperparameter.  Meistens wird 
+\begin{equation}
+k(x,x') = \alpha^2 \mathbf{e}^{ - (x-x')\Lambda(x-x')^T}
+\end{equation}
+angenommen, wobei $\alpha$ (Varianz) und die Matrix $\Lambda$ (Lengthscale) die Hyperparameter bilden. 
+\medskip
+
+\section*{Untersuchte Algorithmen/Modelle:}
+
+\medskip
+{\bf Huber's recursive GP:} benutzt sogenannte ``base" Vektoren $X_D=\{x_1, \ldots, x_n\}$ zu denen während des Trainings die dazugehörigen Funktionswerte $m(x_i)=g(x_i)$ abgeschätzt werden und diese für die Vorhersage (\ref{pred1}) und (\ref{pred2}) benutzt werden.
+
+\medskip
+
+{\bf local recursive GP}
+
+\medskip
+
+
+{\bf dual GPEnsKF}
+
+\medskip
+
+
+Abbildung 1 zeigt den Mean Square Error der xyz-Koordinaten am Ausgang in mm. Hierbei ist zu beachten, dass das volle \gpflow-Modell für die Datensätze 1-3 nur mit 2000 antrainiert worden ist. Während \dualGPEnKF die Hyperparameter selber bestimmt, wurden für die \recursiveGP-Modelle die Hyperparameter der antrainierten \gpflow-Modelle verwendet. Die Hyperparameter der \localGPR-Modelle habe ich nicht weiter angepasst. Bei größeren Datenmengen versagen diese, bzw. werden sehr langsam. Wie man an Abbildung 1 erkennt, sind die Werte für die Datensätze 1,2 und 4 unbrauchbar, obwohl man für Datensatz 3 noch recht gut Werte erhält.
+
+\begin{figure}[h]
+
+\begin{center}
+\begin{tabular}{|c|r|r|r|r|}\hline
+datasets 	& \gpflow 	& \dualGPEnKF 		& \recursiveGP & \localGPR \\\hline\hline
+1		& 0.2258 	& 5794 				& 15966		& - \\\hline
+2		& 0.7349 	& 127305		& 4314		& - \\\hline
+3		& 0.0222 	& \textbf{0.6787} 		& \textbf{0.317}		& - \\\hline
+4		& 0.00639 	& 104		& 618		& 73045 \\\hline
+5		& 0.00297 	& \textbf{0.00924} 		& \textbf{0.00436}		& 0.43205 \\\hline
+6		& 0.01093 	& \textbf{0.02760} 		& \textbf{0.02007}		& 0.84221 \\\hline
+7		& 0.01048 	& \textbf{0.02487} 		& \textbf{0.15196}		& 0.60805 \\\hline
+\end{tabular}
+\caption{MSE von xyz in mm}
+\end{center}
+\end{figure}
+\end{document}
