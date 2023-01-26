@@ -1,0 +1,17 @@
+
+Im Verzeichnis code habe ich das Programm testsuite.py geschrieben um 
+recursiveGP.py "Recursive Gaussian Process Regression", Huber: Recursive GP / (JB) recursive GP*
+
+localGPR
+
+EnsembleGPKF
+
+OGPR.py "On the relationship between online Gaussian process regresion and KLMS algorithms"
+Steven Van Vaerenbergh, et. al. (2016): an incremental GP
+
+
+POG.py "Consistent online Gaussian process regression without the sample complexity bottleneck"
+Koppel et al (2021) --- ??
+
+Extreme Machine Learning
+

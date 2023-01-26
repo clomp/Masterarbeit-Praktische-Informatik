@@ -8,12 +8,7 @@ import numpy as np
 from tqdm import tqdm
 import time
 
-def testGPEnKF(dataset_nr, num_coordinates=3, savePDF=False):    
-    grid_size     = 50
-    ensemble_size = 100    
-    iterations    = 200
-    batch_size    = 10    
-    SCALING = 1000
+def testGPEnKF(dataset_nr, num_coordinates=3, grid_size=50, ensemble_size=100, iterations=200, batch_size=10, savePDF=False, SCALING=1000):    
     
     rgpmodel=DualGPEnKF
     
@@ -80,3 +75,27 @@ def testGPEnKF(dataset_nr, num_coordinates=3, savePDF=False):
     for i in range(num_coordinates):
         plt.plot(np.linspace(1,parameters.T, parameters.T),results[i].prediction_history);
     plt.show()
+    return(totalMSE)
+
+
+def parameter_search(dataset_nr, grid_range, ensemble_range):
+    results = np.zeros((len(grid_range),len(ensemble_range)))
+    grid_low = grid_range.start
+    grid_step = grid_range.step
+    ensemble_low = ensemble_range.start
+    ensemble_step = ensemble_range.step
+    print(grid_low, grid_step, ensemble_low,ensemble_step)
+    for grid in grid_range:
+        for ensemble in ensemble_range:            
+            i=int((grid-grid_low)/grid_step)
+            j=int((ensemble-ensemble_low)/ensemble_step)
+            print(grid,ensemble,i,j)
+            results[i,j] = testGPEnKF(dataset_nr,grid_size=grid, ensemble_size=ensemble)
+            
+    return(results)
+    
+            
+    
+    
+    
+    
