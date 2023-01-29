@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
 import time
+import argparse
 
 def testGPEnKF(dataset_nr, num_coordinates=3, grid_size=50, ensemble_size=100, iterations=200, batch_size=10, savePDF=False, SCALING=1000):    
     
@@ -94,8 +95,19 @@ def parameter_search(dataset_nr, grid_range, ensemble_range):
             
     return(results)
     
-            
+#---------------------------
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(prog='testGPEnKF',
+                                      description='Runs a test on datasets for the GPEnKF model.',
+                                      epilog="implemented by Christian Lomp")
+
+    parser.add_argument('-d', '--dataset', help='indicates the dataset number', default="7")
+                            
+    args = parser.parse_args()
+
+    dataset_nr = int(args.dataset)
     
+    testGPEnKF(dataset_nr, num_coordinates=3, grid_size=50, ensemble_size=100, iterations=200, batch_size=10, savePDF=False, SCALING=1000)
     
     
     

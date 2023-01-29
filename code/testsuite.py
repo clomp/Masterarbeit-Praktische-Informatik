@@ -9,6 +9,7 @@ __version__ = '0.1'
 from RGP.recursiveGP import recursiveGP
 from localGPR.localGPR import localGPR
 from dataset import dataset
+import argparse
 
 
 
@@ -58,3 +59,23 @@ def testsuite(rgpmodel, dataset_nr, options, num_coordinates=3, load=True, itera
     print("---- END ----")
 
 
+#---------------------------
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(prog='testsuite',
+                                      description='Runs a test on datasets for the recursiveGP or local GPR model.',
+                                      epilog="implemented by Christian Lomp")
+
+    parser.add_argument('-d', '--dataset', help='indicates the dataset number', default="7")
+    
+    parser.add_argument('-m', '--model', help='indicates the model recursiveGP or localGPR', default="recursiveGP")
+                        
+    args = parser.parse_args()
+
+    dataset_nr = int(args.dataset)
+
+    if(args.model=="recursiveGP"):
+        testsuite(recursiveGP, dataset_nr, options={"num_base_vectors" : 40, "strategy" : "JB"}, num_coordinates=3, load=True)
+    elif(args.model=="localRGP"):
+        testsuite(localGPR, dataset_nr, options={"wgen":0.8}, num_coordinates=3, load=True)
+   	else:
+   		print("Choose recursiveGP or localRGP")
