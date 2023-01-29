@@ -1,4 +1,4 @@
-\documentclass[ngerman]{scrreprt}
+\documentclass[ngerman]{scrartcl}
 \usepackage{a4wide,amssymb}
 \usepackage[utf8]{inputenc}
 \usepackage[german]{babel}
@@ -11,48 +11,49 @@
 \newcommand{\cov}{\mathrm{cov}}
 \newcommand{\var}{\mathrm{var}}
 
-
+\title{Kurze Zusammenfassung meines Aufenthaltes}
 \begin{document}
-\section*{Kurze Zusammenfassung meines Aufenthaltes}
+\maketitle
+\tableofcontents
+\section{Gaussprozessesregression}
 
-Grundlegende Idee der Gaussprozessesregression:  Funktionswerte einer  Funktion $g:\RR^d \rightarrow \RR$  abzuschätzen unter gegebenen Datenpunkten $D=\{ (x_1,y_1), \ldots, (x_n,y_n)\}$ die 
+Die grundlegende Idee der {\bf Gaussprozessesregression} (siehe Rasmussen und Williams \cite{DBLP:books/lib/RasmussenW06})  ist es zu gegebenen Datenpunkten $D=\{ (x_1,y_1), \ldots, (x_n,y_n)\}$ eine Funktion $g:\RR^d \rightarrow \RR$ abzuschätzen unter der Annahme, dass
 \begin{equation}
 y_i = g(x_i) + \epsilon, \qquad \forall i=1,\ldots, n.
 \end{equation}
-erfüllen, mit $\epsilon \sim \cN(0,\sigma^2)$.  Dabei ist der Gaussprozess bestimmt durch die Mittelwertfunktion $m(x) = E\{g(x)\}$ und die Kovarianzfunktion $k(x,x') = \cov(g(x),g(x'))$ für $x,x'\in \RR^d$. 
-Die Eingabewerte $X_D=\{x_1,\ldots, x_n\}$ sind dabei vorgegeben. Die Matrix 
+erfüllt ist, mit $\epsilon \sim \cN(0,\sigma^2)$.  Dabei ist der Gaussprozess bestimmt durch die Mittelwertfunktion $m(x) = E\{g(x)\}$ und die Kovarianzfunktion $k(x,x') = \cov(g(x),g(x'))$ für $x,x'\in \RR^d$. 
+Die vorgegebenen Eingabevektoren $X_D=\{x_1,\ldots, x_n\}$ bestimmen dabei die Matrix
 \begin{equation}K := \left[ \begin{array}{ccc} k(x_1,x_1) & \cdots & k(x_1,x_n) \\ \vdots & & \vdots \\ k(x_n,x_1) & \cdots & k(x_n,x_n) \end{array} \right]\end{equation}
-und der Vektor $k_x := ( k(x_1, x), \ldots, k(x_n,x) )^T$ zu gegebenem $x\in \RR^d$ ist dabei wesentlich um den Funktionswert $g(x)$ durch folgende Regeln abschätzen zu können:
+Die Funktionswerte bestimmen  den Vektor  $y=(y_1,\ldots, y_n)^T$.
+Zu einem Eingabevektor $x\in \RR^d$  wird mithilfe des Vektors $k_x := ( k(x_1, x), \ldots, k(x_n,x) )$ der Erwartungswert und die Varianz des Funktionswertes $g(x)$ durch folgende Regeln abgeschätzt:
 \begin{eqnarray}
-E\{ g(x)\} &=& m(x) + k_x K^{-1} \left(y-m(X_D)\right)\label{pred1}\\
-\var(x) &=& k(x,x)  + k_x K^{-1} k_x^T\label{pred2}
+E\{ g(x)\} &=& m(x) + k_x K^{-1} y\label{pred1}\\
+\var(g(x)) &=& k(x,x)  + k_x K^{-1} k_x^T\label{pred2}
 \end{eqnarray}
 
-{\bf Problem:} Wenn $n$ zu gross, dann ist die Berechnung der Inversen $K^{-1}$ zu kostenintensiv. 
-
-{\bf Problem:} Die Kernelfunktion ist ein zu bestimmender Hyperparameter.  Meistens wird 
-\begin{equation}
-k(x,x') = \alpha^2 \mathbf{e}^{ - (x-x')\Lambda(x-x')^T}
+ Die Kernelfunktion ist ein zu bestimmender Hyperparameter.  Meistens wird 
+\begin{equation}\label{kernel}
+k(x,x') = \alpha \mathbf{e}^{ - (x-x')\Lambda(x-x')^T}
 \end{equation}
-angenommen, wobei $\alpha$ (Varianz) und die Matrix $\Lambda$ (Lengthscale) die Hyperparameter bilden. 
-\medskip
-
-\section*{Untersuchte Algorithmen/Modelle:}
-
-\medskip
-{\bf Huber's recursive GP:} benutzt sogenannte ``base" Vektoren $X_D=\{x_1, \ldots, x_n\}$ zu denen während des Trainings die dazugehörigen Funktionswerte $m(x_i)=g(x_i)$ abgeschätzt werden und diese für die Vorhersage (\ref{pred1}) und (\ref{pred2}) benutzt werden.
-
-\medskip
-
-{\bf local recursive GP}
-
-\medskip
+angenommen, wobei $\alpha>0$ (Varianz) und die Diagonalmatrix $\Lambda$ (Lengthscales)  mit positiven Einträgen die Hyperparameter bilden. 
 
 
-{\bf dual GPEnsKF}
+\section{Untersuchte Ansätze}
+\subsection{recursiveGP}
+Der {\bf recursive Gaussian Process} von Marco Huber (siehe \cite{HUBER201485}) benutzt sogenannte ``Basis''-Vektoren $X_D=\{x_1, \ldots, x_n\}$ zu denen während des Trainings die dazugehörigen Funktionswerte $m(x_i)=g(x_i)$ abgeschätzt werden und diese dann zur Vorhersage in  (\ref{pred1}) und (\ref{pred2}) anstatt der unbekannten Funktionswerte $y$ benutzt werden. Die Variante bei der die Hyperparameter gelernt werden konnte ich nicht zum Laufen bringen. Verwendet man dagegen schon optimierte Hyperparameter, dann sind die Ergebnisse für die Datensätze $3, 5,6,7$ recht gut.
 
-\medskip
+\subsection{localGPR}
+Die {\bf local Gaussian Process} Regression von Duy Nguyen-Tuong et al. (siehe \cite{DBLP:conf/nips/Nguyen-TuongSP08}) basiert auf der Idee, dass man die Regression durch kleinere lokale Gaussprozess approximiert um somit dem Problem entgegen zu wirken, dass die Kovarianzmatrix $K$ zu groß und damit die Inversenbildung $K^{-1}$ zu kostenintensiv wird. Jeder lokale Gaussprozess deckt ein lokales Gebiet im Eingaberaum ab und wird durch ein Zentroid (=Schwerpunkt) bestimmt. Die lokalen Gebiete werden während des Trainings erzeugt: die Abstände ein neues Trainingsdatum $(x,y)$ zu den Zentroiden der lokalen Gebiete wird ermittelt und das am nächsten gelegene Zentroid ausgewählt, wenn der Abstand klein genug ist. Dann wird das neue Testdatum in das entsprechende lokale Gebiet aufgenommen, die Inverse der neugebildeten lokale Kovarianzmatrix berechnet und ein neues  Zentroid  ermittelt. Ist das neue Testdatum $(x,y)$ an keinem Zentroiden nah genug, dann wird ein neues lokales Gebiet mit Zentroid $(x,y)$ angelegt. Die {\emph{Nähe}} wird durch die Kernelfunktion $k$ ermittelt. Ein Hyperparameter $w_gen$ bestimmt die Schwelle, ab wann ein neues Zentroid angelegt wird. Leider ist nicht klar, wie man $w_gen$ wählen sollte und es können leicht sehr viele oder zu wenige lokale Gebiete erzeugt werden. Der Speicherplatzverbrauch und das Berechnen der Abstände bzw. das wiederholte Berechnen von (kleineren) Inversen der lokalen Kovarianzmatrizen stellt sich als Nachteil heraus. Die Datensätze $1,2,3$ mit $10.000$ Daten terminierten bei mir nicht.
 
+
+
+\subsection{GPEnsKF} 
+Eine Gaussprozessregression durch einen {\bf Ensemble Kalman Filter} wird von Kuzin et al. in \cite{DBLP:journals/corr/abs-1807-03369} eingeführt. Dabei werden ähnlich wie bei Huber Basisvektoren gewählt, die hier {\emph{grid points}} genannt werden. Das Positive  am GPEnsKF ist, dass die Hyperparameter und die Trainingsdaten trainiert werden und zwar beim \emph{dualGPEnsKF} nach einander.  Ein sogenanntes \emph{Ensemble} von Vektoren führt dabei eine Mittelwertberechnung der approximierten Hyperparameter und Trainingsdaten durch. Wie bei Huber's recursiveGP waren die Ergebnisse bei den Datensätzen 1,2,4 unbrauchbar. Bei den anderen Datensätzen lagen die mittleren Fehler etwas über denen von Huber's recursiveGP, aber der Vorteil war der, dass die Hyperparameter nicht durch einen vollen Gaussprozess ermittelt werden mussten.
+
+
+
+
+\section{Vergleich der drei Modelle anhand der Datensätze}
 
 Abbildung 1 zeigt den Mean Square Error der xyz-Koordinaten am Ausgang in mm. Hierbei ist zu beachten, dass das volle \gpflow-Modell für die Datensätze 1-3 nur mit 2000 antrainiert worden ist. Während \dualGPEnKF die Hyperparameter selber bestimmt, wurden für die \recursiveGP-Modelle die Hyperparameter der antrainierten \gpflow-Modelle verwendet. Die Hyperparameter der \localGPR-Modelle habe ich nicht weiter angepasst. Bei größeren Datenmengen versagen diese, bzw. werden sehr langsam. Wie man an Abbildung 1 erkennt, sind die Werte für die Datensätze 1,2 und 4 unbrauchbar, obwohl man für Datensatz 3 noch recht gut Werte erhält.
 
@@ -72,4 +73,22 @@ datasets 	& \gpflow 	& \dualGPEnKF 		& \recursiveGP & \localGPR \\\hline\hline
 \caption{MSE von xyz in mm}
 \end{center}
 \end{figure}
+
+\section{Bedienung der Pythonprogramme}
+Auf GitHub unter dem Verzeichnis code finden sich die Programme \emph{testsuite.py} und \emph{testGPEnKF.py} sowie die Verzeichnisse \emph{RGP}, \emph{localGPR} und \emph{gpenkf}, die die Implementierung der oben beschrieben Modelle enthalten.  Um zum Beispiel das \emph{recursiveGP}-Modell auf den Datensatz 7 zu testen  startet man von der Kommandozeile 
+\begin{center}
+\emph{python testsuite.py -m recursiveGP -d 7}
+\end{center}
+Möchte man das dualGPEnKF Modell testen startet man
+\begin{center}
+\emph{python testGPEnKF.py -d 7}
+\end{center}
+Benutzte Packages: \emph{tensorflow}, \emph{gpflow}, \emph{scikit-learn}, \emph{scipy},  \emph{numpy}, \emph{matplotlib}, \emph{tqdm}, \emph{argparse}.
+
+
+\bibliographystyle{ieeetr}
+\bibliography{literatur}
+
+
+
 \end{document}
