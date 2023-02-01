@@ -77,5 +77,5 @@ if __name__ == '__main__':
         testsuite(recursiveGP, dataset_nr, options={"num_base_vectors" : 40, "strategy" : "JB"}, num_coordinates=3, load=True)
     elif(args.model=="localRGP"):
         testsuite(localGPR, dataset_nr, options={"wgen":0.8}, num_coordinates=3, load=True)
-   	else:
-   		print("Choose recursiveGP or localRGP")
+    else:
+        print("Choose recursiveGP or localRGP")
